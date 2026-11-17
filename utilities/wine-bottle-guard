@@ -105,6 +105,12 @@ def die(msg):
     sys.exit(2)
 
 
+def script_path():
+    """The path this script was called by, for the commands it writes into units and shortcuts.
+    Symlinks are kept: a link in ~/.local/bin to a checkout stays valid when the checkout moves."""
+    return os.path.abspath(sys.argv[0])
+
+
 def norm(path):
     return os.path.realpath(os.path.expanduser(path))
 
@@ -530,7 +536,7 @@ def cmd_launch(target, cmd_args, dry_run):
 
 
 def cmd_service(argv, target, enable):
-    script = os.path.realpath(sys.argv[0])
+    script = script_path()
     slug = "".join(c if c.isalnum() else "-" for c in (target.bottle or os.path.basename(target.prefix))).strip("-")
     name = f"wine-bottle-guard-{slug.lower()}.service"
     quoted = " ".join('"' + a.replace("\\", "\\\\").replace('"', '\\"').replace("%", "%%") + '"'
@@ -810,7 +816,7 @@ def program_exe(prefix, program):
 
 
 def guard_exec(bottle, program, exe):
-    script = os.path.realpath(sys.argv[0])
+    script = script_path()
     argv = [script, "--bottle", bottle, *(["--program", program] if program else []),
             *(["--exe", exe] if exe else []), "launch", "--"]
     return " ".join(exec_quote(a) for a in argv) + " %u"
@@ -887,7 +893,7 @@ def cmd_prefix_shortcuts(target, flags):
     if "--install-watch" in flags:
         die("--install-watch is for bottles; run `shortcuts` again after installing a program")
     dry_run, revert = "--dry-run" in flags, "--revert" in flags
-    script = os.path.realpath(sys.argv[0])
+    script = script_path()
     changed = 0
     for dirpath, _, files in os.walk(os.path.join(APPS_DIR, "wine")):
         for n in sorted(files):
@@ -937,7 +943,7 @@ def cmd_prefix_shortcuts(target, flags):
 def install_shortcut_watch(target, dry_run=False):
     """A systemd user path unit that runs `shortcuts` for the bottle when Bottles adds or changes a
     shortcut; with dry_run only shown."""
-    script = os.path.realpath(sys.argv[0])
+    script = script_path()
     args = [script, "--bottle", target.bottle, "shortcuts"]
     quoted = " ".join('"' + a.replace("\\", "\\\\").replace('"', '\\"').replace("%", "%%") + '"' for a in args)
     slug = "".join(c if c.isalnum() else "-" for c in target.bottle).strip("-").lower()
